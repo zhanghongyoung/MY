@@ -1,0 +1,36 @@
+pipeline {
+    agent any
+    environment {
+        //JAVA_HOME = "/usr/java/jdk1.8.0_251"
+        vm_ip = '127.0.0.1'
+        vm_port = '22'
+        vm_user = 'develop'
+        vm_path = '/environments'
+    }
+    stages {
+
+        //其他配置可以不动，只改该部分配置即可
+        stage('git clone'){
+            steps{
+                checkout([$class: 'GitSCM', branches: [[name: '*/${branch}']], extensions: [], userRemoteConfigs: [[credentialsId: '97cc4117-4f90-4dd0-a23c-f55724a6feb0', url: 'git@codeup.aliyun.com:60aca1847db6c7317ae8394c/IMPORT-SHOP/o2o-new-retail.git']]])
+            }
+        }
+        stage('项目构建'){
+            steps{
+                withMaven(maven: 'maven3') {
+                    sh "mvn clean install -Dmaven.test.skip=true -U"
+                }
+            }
+        }
+        stage('是否发布') {
+            input {
+                message "是否发布?"
+                ok "是"
+            }
+            steps {
+                sh "nohup sh ${vm_path}/dev_shell/app_o2o-new-retail.sh ${module_name}"
+            }
+        }
+
+    }
+}
